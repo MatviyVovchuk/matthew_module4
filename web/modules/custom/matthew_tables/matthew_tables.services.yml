@@ -1,0 +1,4 @@
+services:
+  logger.channel.matthew_tables:
+    class: 'Drupal\Core\Logger\LoggerChannel'
+    arguments: [ 'matthew_tables' ]

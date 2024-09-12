@@ -1,0 +1,21 @@
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the matthew_tables module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function matthew_guestbook_install(): void {
+
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function matthew_guestbook_uninstall(): void {
+  // Clear all caches.
+  drupal_flush_all_caches();
+}
