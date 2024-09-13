@@ -7,37 +7,37 @@ use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 
 /**
- * Defines the Yearly Data entity.
+ * Defines the Matthew Tables Entry entity.
  *
  * @ingroup matthew_tables
  *
  * @ContentEntityType(
- *   id = "yearly_data",
- *   label = @Translation("Yearly Data"),
+ *   id = "matthew_tables_entry",
+ *   label = @Translation("Matthew Tables Entry"),
  *   handlers = {
  *     "view_builder" = "Drupal\Core\Entity\EntityViewBuilder",
- *     "list_builder" = "Drupal\matthew_tables\YearlyDataListBuilder",
+ *     "list_builder" = "Drupal\matthew_tables\MatthewTablesEntryListBuilder",
  *     "form" = {
- *       "default" = "Drupal\matthew_tables\Form\YearlyDataForm",
- *       "add" = "Drupal\matthew_tables\Form\YearlyDataForm",
- *       "edit" = "Drupal\matthew_tables\Form\YearlyDataForm",
- *       "delete" = "Drupal\matthew_tables\Form\YearlyDataDeleteForm",
+ *       "default" = "Drupal\matthew_tables\Form\MatthewTablesEntryForm",
+ *       "add" = "Drupal\matthew_tables\Form\MatthewTablesEntryForm",
+ *       "edit" = "Drupal\matthew_tables\Form\MatthewTablesEntryForm",
+ *       "delete" = "Drupal\matthew_tables\Form\MatthewTablesEntryDeleteForm",
  *     },
- *     "access" = "Drupal\matthew_tables\YearlyDataAccessControlHandler",
+ *     "access" = "Drupal\matthew_tables\MatthewTablesEntryAccessControlHandler",
  *   },
- *   base_table = "yearly_data",
- *   admin_permission = "administer yearly data",
+ *   base_table = "matthew_tables_entry",
+ *   admin_permission = "administer matthew tables entries",
  *   entity_keys = {
  *     "id" = "id",
  *     "uuid" = "uuid",
  *     "year" = "year",
  *   },
  *   links = {
- *     "canonical" = "/admin/structure/yearly_data/{yearly_data}",
- *     "add-form" = "/admin/structure/yearly_data/add",
- *     "edit-form" = "/admin/structure/yearly_data/{yearly_data}/edit",
- *     "delete-form" = "/admin/structure/yearly_data/{yearly_data}/delete",
- *     "collection" = "/admin/structure/yearly_data",
+ *     "canonical" = "/admin/structure/matthew_tables_entry/{matthew_tables_entry}",
+ *     "add-form" = "/admin/structure/matthew_tables_entry/add",
+ *     "edit-form" = "/admin/structure/matthew_tables_entry/{matthew_tables_entry}/edit",
+ *     "delete-form" = "/admin/structure/matthew_tables_entry/{matthew_tables_entry}/delete",
+ *     "collection" = "/admin/structure/matthew_tables_entry",
  *   },
  * )
  */
@@ -51,7 +51,7 @@ class MatthewTablesEntry extends ContentEntityBase {
 
     $fields['year'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Year'))
-      ->setDescription(t('The year for this data.'))
+      ->setDescription(t('The year for this entry.'))
       ->setRequired(TRUE)
       ->setSetting('unsigned', TRUE)
       ->setDisplayOptions('view', [
@@ -67,15 +67,23 @@ class MatthewTablesEntry extends ContentEntityBase {
       ->setDisplayConfigurable('view', TRUE);
 
     $months = [
-      'jan' => 'January', 'feb' => 'February', 'mar' => 'March',
-      'apr' => 'April', 'may' => 'May', 'jun' => 'June',
-      'jul' => 'July', 'aug' => 'August', 'sep' => 'September',
-      'oct' => 'October', 'nov' => 'November', 'dec' => 'December',
+      'jan' => 'January',
+      'feb' => 'February',
+      'mar' => 'March',
+      'apr' => 'April',
+      'may' => 'May',
+      'jun' => 'June',
+      'jul' => 'July',
+      'aug' => 'August',
+      'sep' => 'September',
+      'oct' => 'October',
+      'nov' => 'November',
+      'dec' => 'December',
     ];
 
     foreach ($months as $key => $label) {
       $fields[$key] = BaseFieldDefinition::create('float')
-        ->setLabel(t($label))
+        ->setLabel($label)
         ->setDescription(t('The value for @month.', ['@month' => $label]))
         ->setDefaultValue(0)
         ->setDisplayOptions('view', [
@@ -94,28 +102,36 @@ class MatthewTablesEntry extends ContentEntityBase {
     $quarters = ['q1', 'q2', 'q3', 'q4'];
     foreach ($quarters as $quarter) {
       $fields[$quarter] = BaseFieldDefinition::create('float')
-        ->setLabel(t(strtoupper($quarter)))
+        ->setLabel(strtoupper($quarter))
         ->setDescription(t('The total for @quarter.', ['@quarter' => strtoupper($quarter)]))
-        ->setComputed(TRUE)
-        ->setClass('\Drupal\matthew_tables\Plugin\Field\QuarterlyTotalField')
+        ->setDefaultValue(0)
         ->setDisplayOptions('view', [
           'label' => 'above',
           'type' => 'number_decimal',
           'weight' => 0,
         ])
+        ->setDisplayOptions('form', [
+          'type' => 'number',
+          'weight' => 0,
+        ])
+        ->setDisplayConfigurable('form', TRUE)
         ->setDisplayConfigurable('view', TRUE);
     }
 
     $fields['ytd'] = BaseFieldDefinition::create('float')
       ->setLabel(t('YTD'))
       ->setDescription(t('The year-to-date total.'))
-      ->setComputed(TRUE)
-      ->setClass('\Drupal\matthew_tables\Plugin\Field\YTDTotalField')
+      ->setDefaultValue(0)
       ->setDisplayOptions('view', [
         'label' => 'above',
         'type' => 'number_decimal',
         'weight' => 0,
       ])
+      ->setDisplayOptions('form', [
+        'type' => 'number',
+        'weight' => 0,
+      ])
+      ->setDisplayConfigurable('form', TRUE)
       ->setDisplayConfigurable('view', TRUE);
 
     return $fields;
