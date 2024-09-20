@@ -2,3 +2,7 @@ services:
   logger.channel.matthew_tables:
     class: 'Drupal\Core\Logger\LoggerChannel'
     arguments: [ 'matthew_tables' ]
+
+  matthew_tables.service:
+    class: 'Drupal\matthew_tables\Service\MatthewTablesService'
+    arguments: ['@logger.channel.default']

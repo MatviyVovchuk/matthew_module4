@@ -4,6 +4,7 @@ namespace Drupal\matthew_tables\Traits;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\matthew_tables\Form\MatthewTablesForm;
+use Drupal\matthew_tables\Service\MatthewTablesService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -11,6 +12,13 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Implements a trait to provide form functionality.
  */
 trait MatthewTablesFormTrait {
+  /**
+   * The MatthewTablesService.
+   *
+   * @var \Drupal\matthew_tables\Service\MatthewTablesService
+   */
+  protected $tableService;
+
   /**
    * The logger service.
    *
@@ -21,12 +29,16 @@ trait MatthewTablesFormTrait {
   /**
    * Constructs a new object.
    *
+   * @param \Drupal\matthew_tables\Service\MatthewTablesService $tableService
+   *   The table calculation service.
    * @param \Psr\Log\LoggerInterface $logger
    *   The logger service.
    */
   public function __construct(
+    MatthewTablesService $tableService,
     LoggerInterface $logger,
   ) {
+    $this->tableService = $tableService;
     $this->logger = $logger;
   }
 
@@ -35,6 +47,7 @@ trait MatthewTablesFormTrait {
    */
   public static function create(ContainerInterface $container): MatthewTablesForm|static {
     return new static(
+      $container->get('matthew_tables.service'),
       $container->get('logger.channel.default'),
     );
   }
@@ -429,18 +442,6 @@ trait MatthewTablesFormTrait {
     $form_state->setErrorByName("table][$table_index][years][$year][$month", $error_message);
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
   /**
    * Submit handler for the "Add Year" button.
    */
@@ -503,4 +504,5 @@ trait MatthewTablesFormTrait {
   public function addTableAjax(array &$form, FormStateInterface $form_state) {
     return $form['table_wrapper'];
   }
+
 }
