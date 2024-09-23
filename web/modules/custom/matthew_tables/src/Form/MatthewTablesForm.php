@@ -37,17 +37,7 @@ class MatthewTablesForm extends FormBase {
         if (isset($table['years'])) {
           foreach ($table['years'] as $year => $year_data) {
             $result = $this->tableService->calculateQuarterlyValues($year_data);
-
-            // Store the calculated values.
-            for ($q = 0; $q < 4; $q++) {
-              $form_state->set(['values', $table_index, $year, 'q' . ($q + 1)], $result['quarters'][$q]);
-            }
-            $form_state->set(['values', $table_index, $year, 'ytd'], $result['ytd']);
-
-            // Store the input values.
-            foreach ($result['monthly_data'] as $month => $value) {
-              $form_state->set(['values', $table_index, $year, $month], $value);
-            }
+            $this->tableService->storeValues($form_state, $result, $table_index, $year);
           }
         }
       }
