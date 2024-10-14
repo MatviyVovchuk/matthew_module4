@@ -49,6 +49,23 @@ class MatthewTablesEntry extends ContentEntityBase {
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type): array {
     $fields = parent::baseFieldDefinitions($entity_type);
 
+    $fields['table_index'] = BaseFieldDefinition::create('integer')
+      ->setLabel(t('Table index'))
+      ->setDescription(t('Index of the table to which this year belongs.'))
+      ->setRequired(TRUE)
+      ->setSetting('unsigned', TRUE)
+      ->setDisplayOptions('view', [
+        'label' => 'above',
+        'type' => 'number_integer',
+        'weight' => -6,
+      ])
+      ->setDisplayOptions('form', [
+        'type' => 'number',
+        'weight' => -6,
+      ])
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE);
+
     $fields['year'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Year'))
       ->setDescription(t('The year for this entry.'))
