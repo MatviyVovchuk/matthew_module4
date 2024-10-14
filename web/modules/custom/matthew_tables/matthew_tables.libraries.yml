@@ -1,11 +1,5 @@
 matthew_tables:
   version: 1.x
-  js:
-    js/matthew_tables.js: {}
   css:
     theme:
       css/matthew_tables.css: {}
-  dependencies:
-    - core/jquery
-    - core/drupal
-    - core/once
