@@ -235,7 +235,12 @@ trait MatthewTablesFormTrait {
   /**
    * Validates other tables against the first table.
    */
-  protected function validateOtherTables(array $all_tables, array $first_table, int $first_table_index, FormStateInterface $form_state): void {
+  protected function validateOtherTables(
+    array $all_tables,
+    array $first_table,
+    int $first_table_index,
+    FormStateInterface $form_state,
+  ): void {
     $months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
     $reference_filled_cells = $this->getFilledCells($first_table['years'], $months);
 
@@ -290,7 +295,9 @@ trait MatthewTablesFormTrait {
 
     $gaps = [];
 
-    while ($current_year < $last_cell['year'] || ($current_year == $last_cell['year'] && $current_month <= $last_cell['month'])) {
+    while ($current_year < $last_cell['year'] ||
+      ($current_year == $last_cell['year'] && $current_month <= $last_cell['month'])
+    ) {
       $cell_exists = FALSE;
       foreach ($filled_cells as $cell) {
         if ($cell['year'] == $current_year && $cell['month'] == $current_month) {
@@ -346,7 +353,12 @@ trait MatthewTablesFormTrait {
   /**
    * Validates a table against the reference (first) table.
    */
-  protected function validateTableAgainstReference(array $table, int $table_index, array $reference_filled_cells, FormStateInterface $form_state): void {
+  protected function validateTableAgainstReference(
+    array $table,
+    int $table_index,
+    array $reference_filled_cells,
+    FormStateInterface $form_state,
+  ): void {
     $months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
     $current_filled_cells = $this->getFilledCells($table['years'], $months);
 
@@ -389,7 +401,13 @@ trait MatthewTablesFormTrait {
   /**
    * Reports errors for a set of cells.
    */
-  private function reportCellErrors(array $cells, int $table_index, array $months, string $error_type, FormStateInterface $form_state): void {
+  private function reportCellErrors(
+    array $cells,
+    int $table_index,
+    array $months,
+    string $error_type,
+    FormStateInterface $form_state,
+  ): void {
     foreach ($cells as $cell) {
       $this->setFieldError($form_state, $table_index, $cell['year'], $months[$cell['month']], $error_type);
     }
@@ -406,23 +424,33 @@ trait MatthewTablesFormTrait {
   /**
    * Sets an error for a specific field in the form.
    */
-  protected function setFieldError(FormStateInterface $form_state, int $table_index, int $year, string $month, string $error_type): void {
+  protected function setFieldError(
+    FormStateInterface $form_state,
+    int $table_index,
+    int $year,
+    string $month,
+    string $error_type,
+  ): void {
     $error_message = match ($error_type) {
-      'gap' => $this->t('There is a gap in the data for @month @year in table @table. Please fill in all months consecutively.', [
+      'gap' => $this->t('There is a gap in the data for @month @year in table @table.
+      Please fill in all months consecutively.', [
         '@month' => ucfirst($month),
         '@year' => $year,
         '@table' => $table_index + 1,
       ]),
-      'missing_year' => $this->t('Year @year is missing in table @table. Please ensure all years are consecutive.', [
+      'missing_year' => $this->t('Year @year is missing in table @table.
+      Please ensure all years are consecutive.', [
         '@year' => $year,
         '@table' => $table_index + 1,
       ]),
-      'inconsistent_data' => $this->t('The data for @month @year in table @table does not match the reference table. Please ensure all tables have the same filled periods.', [
+      'inconsistent_data' => $this->t('The data for @month @year in table @table does not match the
+      reference table. Please ensure all tables have the same filled periods.', [
         '@month' => ucfirst($month),
         '@year' => $year,
         '@table' => $table_index + 1,
       ]),
-      'extra_data' => $this->t('Table @table has extra data for @month @year. Please remove this data to match the reference table.', [
+      'extra_data' => $this->t('Table @table has extra data for @month @year.
+      Please remove this data to match the reference table.', [
         '@table' => $table_index + 1,
         '@month' => ucfirst($month),
         '@year' => $year,
@@ -490,7 +518,7 @@ trait MatthewTablesFormTrait {
     $current_year = date('Y');
     $form_state->set(['min_year', $new_table_index], $current_year);
 
-    // Add a message to inform the user that a new year has been added.
+    // Add a message to inform the user that a new table has been added.
     $this->messenger()->addMessage($this->t('A new table (@table) has been added.', [
       '@table' => $new_table_index + 1,
     ]));

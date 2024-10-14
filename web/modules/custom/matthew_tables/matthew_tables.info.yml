@@ -5,3 +5,5 @@ package: Custom
 core_version_requirement: ^10
 version: 1.0
 dependencies:
+  - drupal:field
+  - drupal:text

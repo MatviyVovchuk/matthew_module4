@@ -2,13 +2,13 @@
 
 /**
  * @file
- * Defines hook implementations for the Matthew guestbook module.
+ * Defines hook implementations for the Matthew tables module.
  */
 
 /**
  * Implements hook_theme().
  *
- * Defines the theme hook for the Matthew guestbook module, specifying the
+ * Defines the theme hook for the Matthew tables module, specifying the
  * template file and associated variables.
  *
  * @throws \Drupal\Core\Extension\ExtensionException

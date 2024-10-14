@@ -41,7 +41,6 @@ class MatthewTablesController extends ControllerBase {
    * Returns a page with the table form.
    */
   public function content(): array {
-    // Render the custom form.
     $form = $this->formBuilder->getForm('Drupal\matthew_tables\Form\MatthewTablesForm');
     return [
       '#theme' => 'matthew-tables',
