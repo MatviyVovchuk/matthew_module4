@@ -1,0 +1,7 @@
+matthew_tables.content:
+  path: '/matthew-tables'
+  defaults:
+    _controller: '\Drupal\matthew_tables\Controller\MatthewTablesController::content'
+    _title: 'Matthew Tables'
+  requirements:
+    _permission: 'access content'

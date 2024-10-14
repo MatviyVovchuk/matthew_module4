@@ -1,0 +1,25 @@
+<?php
+
+/**
+ * @file
+ * Defines hook implementations for the Matthew guestbook module.
+ */
+
+/**
+ * Implements hook_theme().
+ *
+ * Defines the theme hook for the Matthew guestbook module, specifying the
+ * template file and associated variables.
+ *
+ * @throws \Drupal\Core\Extension\ExtensionException
+ *   Throws an exception if the path cannot be resolved.
+ */
+function matthew_tables_theme(array $existing, string $type, string $theme, string $path): array {
+  return [
+    'matthew-tables' => [
+      'variables' => [
+        'form' => [],
+      ],
+    ],
+  ];
+}

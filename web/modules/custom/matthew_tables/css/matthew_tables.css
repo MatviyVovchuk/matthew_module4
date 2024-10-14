@@ -1,0 +1,15 @@
+.form-item {
+  margin: 0;
+}
+
+input[type="number"] {
+  width: 80px;
+}
+
+table td {
+  padding: 5px;
+}
+
+.month-input {
+  min-width: 50px;
+}
