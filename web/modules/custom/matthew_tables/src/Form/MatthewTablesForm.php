@@ -126,21 +126,21 @@ class MatthewTablesForm extends FormBase {
         '#attributes' => [
           'class' => ['month-input'],
         ],
-        '#default_value' => $form_state->getValue([$year, $month]) ?? '',
+        '#default_value' => $form_state->get(['values', $year, $month]) ?? $form_state->getValue([$year, $month]) ?? '0',
       ];
 
       // Add quarter after every 3 months.
       if (($i + 1) % 3 == 0) {
         $quarter = $quarters[($i + 1) / 3 - 1];
         $row[$quarter] = [
-          '#markup' => $form_state->getValue([$year, $quarter]) ?? '0.00',
+          '#markup' => $form_state->get(['values', $year, $quarter]) ?? $form_state->getValue([$year, $quarter]) ?? '0.00',
         ];
       }
     }
 
     // Add YTD at the end.
     $row['ytd'] = [
-      '#markup' => $form_state->getValue([$year, 'ytd']) ?? '0.00',
+      '#markup' => $form_state->get(['values', $year, 'ytd']) ?? $form_state->getValue([$year, 'ytd']) ?? '0.00',
     ];
 
     return $row;
@@ -149,7 +149,38 @@ class MatthewTablesForm extends FormBase {
   /**
    * {@inheritdoc}
    */
+  public function validateForm(array &$form, FormStateInterface $form_state): void {
+    // Checking each year in the table.
+    $years = array_keys($form_state->getValue('table'));
+
+    foreach ($years as $year) {
+      $year_data = $form_state->getValue(['table', $year]);
+
+      // Check every month.
+      foreach (['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'] as $month) {
+        $value = $year_data[$month];
+
+        if (!is_numeric($value) || $value < 0) {
+          // If the value is not numeric or less than 0, add an error.
+          $form_state->setErrorByName("table][$year][$month", $this->t('Invalid value for @month in @year.', [
+            '@month' => ucfirst($month),
+            '@year' => $year,
+          ]));
+        }
+      }
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function submitForm(array &$form, FormStateInterface $form_state): void {
+    if ($form_state->getErrors()) {
+      // If there are validation errors, show a failure message.
+      $this->messenger()->addError($this->t('Invalid form data. Please correct the errors and try again.'));
+      return;
+    }
+
     $years = array_keys($form_state->getValue('table'));
 
     foreach ($years as $year) {
@@ -187,12 +218,17 @@ class MatthewTablesForm extends FormBase {
         '@ytd' => $ytd,
       ]);
 
-      // Set the calculated values.
-      $form_state->setValue(['table', $year, 'q1'], number_format($q1, 2));
-      $form_state->setValue(['table', $year, 'q2'], number_format($q2, 2));
-      $form_state->setValue(['table', $year, 'q3'], number_format($q3, 2));
-      $form_state->setValue(['table', $year, 'q4'], number_format($q4, 2));
-      $form_state->setValue(['table', $year, 'ytd'], number_format($ytd, 2));
+      // Store the calculated values in the form state.
+      $form_state->set(['values', $year, 'q1'], number_format($q1, 2));
+      $form_state->set(['values', $year, 'q2'], number_format($q2, 2));
+      $form_state->set(['values', $year, 'q3'], number_format($q3, 2));
+      $form_state->set(['values', $year, 'q4'], number_format($q4, 2));
+      $form_state->set(['values', $year, 'ytd'], number_format($ytd, 2));
+
+      // Store the input values as well.
+      foreach (['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'] as $month) {
+        $form_state->set(['values', $year, $month], $year_data[$month]);
+      }
     }
 
     $form_state->setRebuild(TRUE);
