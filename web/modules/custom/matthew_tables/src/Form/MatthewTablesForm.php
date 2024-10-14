@@ -51,16 +51,14 @@ class MatthewTablesForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state): array {
-    $current_year = date('Y');
-    $min_year = $form_state->get('min_year') ?: $current_year;
-    $years = range($current_year, $min_year);
+    $table_count = $form_state->get('table_count') ?: 1;
 
-    $form['add_year'] = [
+    $form['add_table'] = [
       '#type' => 'submit',
-      '#value' => $this->t('Add Year'),
-      '#submit' => ['::addYear'],
+      '#value' => $this->t('Add Table'),
+      '#submit' => ['::addTable'],
       '#ajax' => [
-        'callback' => '::addYearAjax',
+        'callback' => '::addTableAjax',
         'wrapper' => 'matthew-tables-wrapper',
       ],
     ];
@@ -71,20 +69,13 @@ class MatthewTablesForm extends FormBase {
     ];
 
     $form['table_wrapper']['table'] = [
-      '#type' => 'table',
-      '#header' => [
-        $this->t('Year'),
-        'Jan', 'Feb', 'Mar', 'Q1',
-        'Apr', 'May', 'Jun', 'Q2',
-        'Jul', 'Aug', 'Sep', 'Q3',
-        'Oct', 'Nov', 'Dec', 'Q4',
-        'YTD',
-      ],
+      '#tree' => TRUE,
     ];
 
-    foreach ($years as $year) {
-      $row = $this->buildYearRow($year, $form_state);
-      $form['table_wrapper']['table'][$year] = $row;
+    for ($table_index = 0; $table_index < $table_count; $table_index++) {
+      $table_and_button = $this->buildTable($form_state, $table_index);
+      $form['table_wrapper']['table'][$table_index]['years'] = $table_and_button['table'];
+      $form['table_wrapper']['table'][$table_index]['add_year'] = $table_and_button['add_year'];
     }
 
     $form['submit'] = [
@@ -94,9 +85,8 @@ class MatthewTablesForm extends FormBase {
 
     $form['#attached']['library'][] = 'matthew_tables/matthew_tables';
 
+    // Disable caching for this form.
     $form['#cache'] = [
-      'tags' => ['matthew_tables_entry_list'],
-      'contexts' => ['user.permissions'],
       'max-age' => 0,
     ];
 
@@ -104,9 +94,50 @@ class MatthewTablesForm extends FormBase {
   }
 
   /**
+   * Builds a single table.
+   */
+  private function buildTable(FormStateInterface $form_state, $table_index): array {
+    $current_year = date('Y');
+    $min_year = $form_state->get(['min_year', $table_index]) ?: $current_year;
+    $years = range($current_year, $min_year);
+
+    $table_wrapper = [
+      'table' => [
+        '#type' => 'table',
+        '#header' => [
+          $this->t('Year'),
+          'Jan', 'Feb', 'Mar', 'Q1',
+          'Apr', 'May', 'Jun', 'Q2',
+          'Jul', 'Aug', 'Sep', 'Q3',
+          'Oct', 'Nov', 'Dec', 'Q4',
+          'YTD',
+        ],
+      ],
+    ];
+
+    foreach ($years as $year) {
+      $row = $this->buildYearRow($year, $form_state, $table_index);
+      $table_wrapper['table'][$year] = $row;
+    }
+
+    $table_wrapper['add_year'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Add Year'),
+      '#submit' => ['::addYear'],
+      '#ajax' => [
+        'callback' => '::addYearAjax',
+        'wrapper' => 'matthew-tables-wrapper',
+      ],
+      '#name' => 'add_year_' . $table_index,
+    ];
+
+    return $table_wrapper;
+  }
+
+  /**
    * Builds a table row for a given year.
    */
-  private function buildYearRow($year, FormStateInterface $form_state): array {
+  private function buildYearRow($year, FormStateInterface $form_state, $table_index): array {
     $row = [
       'year' => [
         '#plain_text' => $year,
@@ -126,21 +157,22 @@ class MatthewTablesForm extends FormBase {
         '#attributes' => [
           'class' => ['month-input'],
         ],
-        '#default_value' => $form_state->get(['values', $year, $month]) ?? $form_state->getValue([$year, $month]) ?? '0',
+        '#default_value' => $form_state->get(['values', $table_index, $year, $month]) ?? '',
+        '#name' => "table[$table_index][years][$year][$month]",
       ];
 
       // Add quarter after every 3 months.
       if (($i + 1) % 3 == 0) {
         $quarter = $quarters[($i + 1) / 3 - 1];
         $row[$quarter] = [
-          '#markup' => $form_state->get(['values', $year, $quarter]) ?? $form_state->getValue([$year, $quarter]) ?? '0.00',
+          '#markup' => $form_state->get(['values', $table_index, $year, $quarter]) ?? '0.00',
         ];
       }
     }
 
     // Add YTD at the end.
     $row['ytd'] = [
-      '#markup' => $form_state->get(['values', $year, 'ytd']) ?? $form_state->getValue([$year, 'ytd']) ?? '0.00',
+      '#markup' => $form_state->get(['values', $table_index, $year, 'ytd']) ?? '0.00',
     ];
 
     return $row;
@@ -150,22 +182,22 @@ class MatthewTablesForm extends FormBase {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state): void {
-    // Checking each year in the table.
-    $years = array_keys($form_state->getValue('table'));
+    $values = $form_state->getValue('table');
 
-    foreach ($years as $year) {
-      $year_data = $form_state->getValue(['table', $year]);
+    foreach ($values as $table_index => $table) {
+      if (isset($table['years'])) {
+        foreach ($table['years'] as $year => $year_data) {
+          $months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
-      // Check every month.
-      foreach (['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'] as $month) {
-        $value = $year_data[$month];
-
-        if (!is_numeric($value) || $value < 0) {
-          // If the value is not numeric or less than 0, add an error.
-          $form_state->setErrorByName("table][$year][$month", $this->t('Invalid value for @month in @year.', [
-            '@month' => ucfirst($month),
-            '@year' => $year,
-          ]));
+          foreach ($months as $month) {
+            if (!isset($year_data[$month]) || $year_data[$month] === '') {
+              $form_state->setErrorByName("table][$table_index][years][$year][$month", $this->t('The field for @month @year in table @table is required.', [
+                '@month' => ucfirst($month),
+                '@year' => $year,
+                '@table' => $table_index + 1,
+              ]));
+            }
+          }
         }
       }
     }
@@ -175,59 +207,33 @@ class MatthewTablesForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state): void {
-    if ($form_state->getErrors()) {
-      // If there are validation errors, show a failure message.
-      $this->messenger()->addError($this->t('Invalid form data. Please correct the errors and try again.'));
-      return;
-    }
+    $table_data = $form_state->getValue('table');
 
-    $years = array_keys($form_state->getValue('table'));
+    foreach ($table_data as $table_index => $table) {
+      if (isset($table['years'])) {
+        foreach ($table['years'] as $year => $year_data) {
+          // Process the data for each year.
+          $months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+          $quarter_totals = [0, 0, 0, 0];
+          $ytd_total = 0;
 
-    foreach ($years as $year) {
-      $year_data = $form_state->getValue(['table', $year]);
+          foreach ($months as $i => $month) {
+            $value = (float) ($year_data[$month] ?? 0);
+            $quarter_totals[floor($i / 3)] += $value;
+            $ytd_total += $value;
+          }
 
-      // Convert all to number.
-      $jan = (float) $year_data['jan'];
-      $feb = (float) $year_data['feb'];
-      $mar = (float) $year_data['mar'];
-      $apr = (float) $year_data['apr'];
-      $may = (float) $year_data['may'];
-      $jun = (float) $year_data['jun'];
-      $jul = (float) $year_data['jul'];
-      $aug = (float) $year_data['aug'];
-      $sep = (float) $year_data['sep'];
-      $oct = (float) $year_data['oct'];
-      $nov = (float) $year_data['nov'];
-      $dec = (float) $year_data['dec'];
+          // Store the calculated values.
+          for ($q = 0; $q < 4; $q++) {
+            $form_state->set(['values', $table_index, $year, 'q' . ($q + 1)], number_format($quarter_totals[$q], 2));
+          }
+          $form_state->set(['values', $table_index, $year, 'ytd'], number_format($ytd_total, 2));
 
-      // Calculate quarters.
-      $q1 = $jan + $feb + $mar;
-      $q2 = $apr + $may + $jun;
-      $q3 = $jul + $aug + $sep;
-      $q4 = $oct + $nov + $dec;
-
-      // Calculate YTD.
-      $ytd = $q1 + $q2 + $q3 + $q4;
-
-      $this->logger('matthew_tables')->error('year: @year | q1: @q1 | q2: @q2 | q3: @q3 | q4: @q4 | ytd: @ytd', [
-        '@year' => $year,
-        '@q1' => $q1,
-        '@q2' => $q2,
-        '@q3' => $q3,
-        '@q4' => $q4,
-        '@ytd' => $ytd,
-      ]);
-
-      // Store the calculated values in the form state.
-      $form_state->set(['values', $year, 'q1'], number_format($q1, 2));
-      $form_state->set(['values', $year, 'q2'], number_format($q2, 2));
-      $form_state->set(['values', $year, 'q3'], number_format($q3, 2));
-      $form_state->set(['values', $year, 'q4'], number_format($q4, 2));
-      $form_state->set(['values', $year, 'ytd'], number_format($ytd, 2));
-
-      // Store the input values as well.
-      foreach (['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'] as $month) {
-        $form_state->set(['values', $year, $month], $year_data[$month]);
+          // Store the input values.
+          foreach ($months as $month) {
+            $form_state->set(['values', $table_index, $year, $month], $year_data[$month] ?? '');
+          }
+        }
       }
     }
 
@@ -239,8 +245,11 @@ class MatthewTablesForm extends FormBase {
    * Submit handler for the "Add Year" button.
    */
   public function addYear(array &$form, FormStateInterface $form_state): void {
-    $min_year = $form_state->get('min_year') ?: date('Y');
-    $form_state->set('min_year', $min_year - 1);
+    $triggering_element = $form_state->getTriggeringElement();
+    $table_index = substr($triggering_element['#name'], strlen('add_year_'));
+
+    $min_year = $form_state->get(['min_year', $table_index]) ?: date('Y');
+    $form_state->set(['min_year', $table_index], $min_year - 1);
     $form_state->setRebuild(TRUE);
   }
 
@@ -248,6 +257,28 @@ class MatthewTablesForm extends FormBase {
    * Ajax callback for the "Add Year" button.
    */
   public function addYearAjax(array &$form, FormStateInterface $form_state) {
+    return $form['table_wrapper'];
+  }
+
+  /**
+   * Submit handler for the "Add Table" button.
+   */
+  public function addTable(array &$form, FormStateInterface $form_state): void {
+    $table_count = $form_state->get('table_count') ?: 1;
+    $new_table_index = $table_count;
+    $form_state->set('table_count', $table_count + 1);
+
+    // Initialize the new table with the current year.
+    $current_year = date('Y');
+    $form_state->set(['min_year', $new_table_index], $current_year);
+
+    $form_state->setRebuild(TRUE);
+  }
+
+  /**
+   * Ajax callback for the "Add Table" button.
+   */
+  public function addTableAjax(array &$form, FormStateInterface $form_state) {
     return $form['table_wrapper'];
   }
 
