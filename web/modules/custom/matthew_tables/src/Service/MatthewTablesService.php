@@ -41,38 +41,46 @@ class MatthewTablesService {
     try {
       $months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
       $quarters = [0, 0, 0, 0];
-      $ytd_total = 0;
 
+      // Calculate quarter values
       foreach ($months as $i => $month) {
         $value = (float) ($monthly_data[$month] ?? 0);
-        $quarter_index = floor($i / 3);
-        $quarters[$quarter_index] += $value;
-        $ytd_total += $value;
+        $quarters[floor($i / 3)] += $value;
       }
 
-      // Calculate quarter values using the provided formula.
+      // Formula for quarterly values: ((М1+М2+М3)+1)/3
+      // Where М* is the value of the corresponding month of the quarter
       for ($q = 0; $q < 4; $q++) {
-        $start_month = $q * 3;
-        $quarter_sum = 0;
-        for ($m = 0; $m < 3; $m++) {
-          $month_value = (float) ($monthly_data[$months[$start_month + $m]] ?? 0);
-          $quarter_sum += $month_value;
+        $calculated_value = (($quarters[$q] + 1) / 3);
+        $rounded_value = round($calculated_value, 2);
+
+        if (abs($rounded_value - $calculated_value) > 0.05) {
+          throw new \Exception("Quarterly calculated value exceeds allowed deviation for Q" . ($q + 1));
         }
-        $quarters[$q] = number_format((($quarter_sum + 1) / 3), 2);
+
+        $quarters[$q] = $rounded_value;
       }
 
-      $result = [
+      // Formula for yearly value: ((К1+К2+К3+К4)+1)/4
+      // Where К* is the value of the corresponding quarter
+      $yearly_sum = array_sum($quarters);
+      $calculated_yearly = (($yearly_sum + 1) / 4);
+      $rounded_yearly = round($calculated_yearly, 2);
+
+      if (abs($rounded_yearly - $calculated_yearly) > 0.05) {
+        throw new \Exception("Yearly calculated value exceeds allowed deviation");
+      }
+
+      return [
         'quarters' => $quarters,
-        'ytd' => number_format($ytd_total, 2),
+        'ytd' => $rounded_yearly,
         'monthly_data' => array_map(function ($value) {
           return $value ?? '';
         }, $monthly_data),
       ];
-
-      return $result;
     }
     catch (\Exception $e) {
-      $this->logger->error('Error in quarterly calculations: @message', [
+      $this->logger->error('Error in quarterly/yearly calculations: @message', [
         '@message' => $e->getMessage(),
       ]);
       throw $e;
